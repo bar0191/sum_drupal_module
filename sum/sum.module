@@ -1,0 +1,141 @@
+<?php
+
+/**
+ * @return mixed
+ * hook_menu() implementation
+ */
+function sum_menu() {
+    $items['sum'] = array(
+        'title' => 'Sum',
+        'type'  => MENU_NORMAL_ITEM,
+        'access callback' => TRUE,
+        'page callback'   => 'drupal_get_form',
+        'page arguments'  => array('sum_form'),
+        'menu_name' => 'main-menu',
+    );
+    $items['success'] = array(
+        'title' => 'Success',
+        'type'  => MENU_CALLBACK,
+        'page callback' => 'sum_success',
+        'access callback' => TRUE
+    );
+    return $items;
+}
+
+/**
+ * @return mixed
+ * hook_form() implementation
+ */
+function sum_form() {
+    $form['left_number'] = array(
+        '#title' => 'Left Number',
+        '#type'  => 'textfield',
+        '#description' => t('Please enter your starting number.'),
+        '#element_validate' => array('element_validate_integer_positive', 'element_validate_prime'),
+        '#required' => TRUE,
+    );
+
+    $form['right_number'] = array(
+        '#title' => 'Right Number',
+        '#type'  => 'textfield',
+        '#description' => t('Please enter a number to add to the starting number'),
+        '#element_validate' => array('element_validate_integer_positive', 'element_validate_prime'),
+        '#required' => TRUE,
+    );
+
+    $form['submit'] = array(
+        '#type'  => 'submit',
+        '#value' => 'Calculate'
+    );
+
+    $form['#validate'][] = 'sum_validate';
+
+    return $form;
+}
+
+/**
+ * @param $form
+ * @param $form_state
+ * hook_form_submit() implementation
+ */
+function sum_form_submit($form, &$form_state) {
+    //echo '<pre>' . var_export($form_state, true) . '</pre>';
+    //exit;
+    $first_number  = $form_state['values']['left_number'];
+    $second_number = $form_state['values']['right_number'];
+    $sum = $first_number + $second_number;
+    $_SESSION['sum_output'] = $sum;
+    $form_state['redirect'] = 'success';
+}
+
+/**
+ * @param $form
+ * @param $form_state
+ * hook_validate() implementation
+ */
+function sum_validate($form, &$form_state) {
+    if (strlen((string)$form_state['values']['left_number'] ) > 3)
+        form_set_error('left_number', t('Left number must be no greater than 3 digits'));
+
+
+    if (strlen((string)$form_state['values']['right_number'] ) > 3)
+        form_set_error('right_number', t('Right number must be no greater than 3 digits'));
+
+}
+
+/**
+ * @param $element
+ * hook_validate_even() implementation
+ * check if value is even
+ */
+function element_validate_even($element) {
+    if ($element['#value'] % 2 != 0)
+        form_error($element, t('Left number must be even.'));
+
+}
+
+/**
+ * @param $element
+ * hook_validate_odd() implementation
+ * check if value is odd
+ */
+function element_validate_odd($element) {
+    if ($element['#value'] % 2 == 0)
+        form_error($element, t('Right number must be odd.'));
+
+}
+
+/**
+ * @return string
+ * hook_success() - redirect success message
+ */
+function sum_success() {
+    $answer = $_SESSION['sum_output'];
+    return "You calculated a sum! The answer is " . $answer;
+}
+
+/**
+ * @param $element
+ * validate range of values enter (not in use)
+ */
+function element_validate_range($element) {
+    if ($element['#value'] > 100 || $element['#value'] < -100)
+        form_error($element, t('Number must be less than 50 or greater than -50.'));
+
+}
+
+/**
+ * @param $element
+ * validate if the values entered are prime values
+ */
+function element_validate_prime($element) {
+    if ($element['#value'] == 1 || ($element['#value'] == 0))
+        form_error($element, t('Number must be prime.'));
+
+    for($i = 2; $i < $element['#value']; $i++) {
+        if($element['#value'] % $i == 0) {
+            form_error($element, t('Number must be prime.'));
+            return;
+        }
+    }
+}
